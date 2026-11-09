@@ -1078,7 +1078,7 @@ document.querySelectorAll('.mode-pills button').forEach(b=>b.onclick=()=>{ stopA
 let drag=null;
 stage.addEventListener('pointerdown', e=>{
   if(state.mode==='film') return;
-  drag = {x:e.clientX, y:e.clientY, tx:state.tx, ty:state.ty, moved:false};
+  drag = {x:e.clientX, y:e.clientY, tx:state.tx, ty:state.ty, moved:false, card:e.target.closest('.pc')};
   stage.setPointerCapture(e.pointerId);
 });
 stage.addEventListener('pointermove', e=>{
@@ -1089,9 +1089,8 @@ stage.addEventListener('pointermove', e=>{
 });
 stage.addEventListener('pointerup', e=>{
   if(!drag) return;
-  const wasDrag=drag.moved; drag=null;
+  const wasDrag=drag.moved, card=drag.card; drag=null;
   if(wasDrag) return;
-  const card=e.target.closest('.pc');
   if(!card) return;
   const i=+card.dataset.i;
   if(state.mode==='stack' && !state.stackOpen){ state.stackOpen=true; render(false); return; }
