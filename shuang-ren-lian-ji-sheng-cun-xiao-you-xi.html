@@ -1,0 +1,1383 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>篝火求生 · 双人联机</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <style>
+      :root{
+        color-scheme: dark;
+        --bg:#150d07;
+        --bg2:#241407;
+        --panel:#2b1a0e;
+        --panel2:#38220f;
+        --line:#5a3a1e;
+        --ink:#f7ead2;
+        --ink-dim:#c9ab7d;
+        --accent:#ff8c42;
+        --accent2:#ffb347;
+        --good:#8fce62;
+        --bad:#ff6b5e;
+        --p1:#ff8c42;
+        --p2:#4da3e8;
+        --radius:14px;
+      }
+      *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+      html,body{margin:0;padding:0}
+      body{
+        background:radial-gradient(1200px 700px at 50% -10%, #3a2110 0%, var(--bg2) 45%, var(--bg) 100%);
+        color:var(--ink);
+        font-family:"Noto Sans SC",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+        min-height:100vh;
+      }
+      button{font-family:inherit;cursor:pointer}
+      input{font-family:inherit}
+      .wrap{max-width:1060px;margin:0 auto;padding:14px 14px 30px}
+
+      /* ---------- screens ---------- */
+      .screen{display:none}
+      .screen.on{display:block}
+
+      .hero{text-align:center;padding:34px 10px 8px}
+      .flame-badge{width:74px;height:74px;margin:0 auto 10px;display:block}
+      h1.title{
+        font-family:"Noto Serif SC",serif;font-weight:900;
+        font-size:clamp(38px,7vw,58px);letter-spacing:.06em;margin:0;
+        color:var(--ink);
+      }
+      h1.title .fire-word{color:var(--accent)}
+      .subtitle{margin:10px 0 0;color:var(--ink-dim);font-size:15px;letter-spacing:.14em}
+      .tagline{max-width:620px;margin:16px auto 0;color:#e6d3ae;font-size:14.5px;line-height:1.75}
+
+      .menu{display:flex;flex-direction:column;gap:12px;max-width:430px;margin:28px auto 0}
+      .btn{
+        border:1px solid var(--line);background:var(--panel);color:var(--ink);
+        border-radius:var(--radius);padding:15px 18px;font-size:17px;font-weight:700;
+        display:flex;align-items:center;gap:12px;text-align:left;
+        transition:background .15s,transform .1s;
+      }
+      .btn:hover{background:var(--panel2)}
+      .btn:active{transform:scale(.985)}
+      .btn .sub{display:block;font-size:12.5px;font-weight:400;color:var(--ink-dim);margin-top:2px}
+      .btn .ic{flex:0 0 auto;width:26px;height:26px}
+      .btn.primary{background:linear-gradient(180deg,#a34d16,#8a3d0e);border-color:#c96a24}
+      .btn.primary:hover{background:linear-gradient(180deg,#b5571a,#96450f)}
+      .btn:disabled{opacity:.45;cursor:not-allowed}
+      .btn.center{justify-content:center;text-align:center}
+      .btn.ghost{background:transparent}
+
+      .card{
+        background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+        padding:18px;max-width:640px;margin:22px auto 0;
+      }
+      .card h2{font-family:"Noto Serif SC",serif;margin:0 0 10px;font-size:19px;letter-spacing:.05em}
+      .card p,.card li{font-size:14px;line-height:1.8;color:#e8d7b4}
+      .card ul{margin:6px 0;padding-left:20px}
+      .keys{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin-top:8px}
+      @media (max-width:560px){.keys{grid-template-columns:1fr}}
+      .keys div{font-size:13.5px;color:#e8d7b4;line-height:1.7}
+      kbd{
+        background:#17100a;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;
+        padding:1px 7px;font-size:12.5px;font-family:inherit;color:var(--accent2);white-space:nowrap;
+      }
+      .roomcode{
+        font-family:"Noto Serif SC",serif;font-weight:900;letter-spacing:.35em;text-indent:.35em;
+        font-size:clamp(38px,9vw,54px);text-align:center;color:var(--accent2);
+        background:#17100a;border:1px dashed var(--line);border-radius:var(--radius);
+        padding:16px 6px;margin:12px 0;
+      }
+      .statusline{text-align:center;color:var(--ink-dim);font-size:14px;min-height:22px;line-height:1.6}
+      .statusline b{color:var(--good)}
+      .statusline .err{color:var(--bad)}
+      .codeinput{
+        width:100%;background:#17100a;border:1px solid var(--line);border-radius:10px;color:var(--ink);
+        font-size:24px;letter-spacing:.3em;text-align:center;padding:12px;text-transform:uppercase;outline:none;
+      }
+      .codeinput:focus{border-color:var(--accent)}
+      .rowbtns{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+      .rowbtns .btn{flex:1;justify-content:center;text-align:center;min-width:140px}
+      .backlink{display:block;margin:18px auto 0;background:none;border:none;color:var(--ink-dim);font-size:14px;text-decoration:underline}
+      .note{font-size:12.5px;color:var(--ink-dim);line-height:1.7;margin-top:10px;text-align:center}
+
+      /* ---------- game ---------- */
+      #screen-game{padding-top:2px}
+      .hud{
+        display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+        background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+        padding:8px 12px;margin-bottom:10px;
+      }
+      .hud .phase{font-weight:700;font-size:15px;white-space:nowrap}
+      .hud .phase .t{color:var(--accent2);font-variant-numeric:tabular-nums}
+      .hud .night{font-size:13px;color:var(--ink-dim);white-space:nowrap}
+      .chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+      .chip{
+        display:inline-flex;align-items:center;gap:5px;background:#17100a;border:1px solid var(--line);
+        border-radius:999px;padding:3px 10px 3px 7px;font-size:13.5px;font-variant-numeric:tabular-nums;
+      }
+      .chip svg{width:15px;height:15px}
+      .conn{font-size:12.5px;color:var(--ink-dim);white-space:nowrap}
+      .conn .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#8a8a8a;margin-right:5px;vertical-align:1px}
+      .conn.ok .dot{background:var(--good)}
+      .conn.warn .dot{background:var(--accent2)}
+      .conn.bad .dot{background:var(--bad)}
+      .iconbtn{
+        background:#17100a;border:1px solid var(--line);color:var(--ink);border-radius:9px;
+        width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+      }
+      .iconbtn svg{width:18px;height:18px}
+
+      .bars{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+      .pbar{
+        flex:1;min-width:210px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:7px 11px;
+      }
+      .pbar .who{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;margin-bottom:5px}
+      .pbar .who .swatch{width:11px;height:11px;border-radius:50%}
+      .pbar .who .st{margin-left:auto;font-weight:400;font-size:12px;color:var(--ink-dim)}
+      .meter{height:8px;background:#17100a;border-radius:99px;overflow:hidden;margin-top:4px}
+      .meter>i{display:block;height:100%;border-radius:99px;transition:width .25s}
+      .meter.hp>i{background:linear-gradient(90deg,#e2543e,#ff8c42)}
+      .meter.hu>i{background:linear-gradient(90deg,#c9a227,#ffd34d)}
+      .meter.fuel>i{background:linear-gradient(90deg,#e2543e,#ffb347)}
+      .meterlbl{font-size:11px;color:var(--ink-dim);display:flex;justify-content:space-between;margin-top:4px}
+      .fuelbar{flex:1.2;min-width:230px}
+
+      .stage{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#20351c;touch-action:none}
+      canvas{display:block;width:100%;height:auto}
+      .banner{
+        position:absolute;left:50%;top:16%;transform:translateX(-50%);text-align:center;pointer-events:none;
+        opacity:0;transition:opacity .4s;width:92%;
+      }
+      .banner.show{opacity:1}
+      .banner .big{font-family:"Noto Serif SC",serif;font-weight:900;font-size:clamp(26px,5.5vw,42px);letter-spacing:.12em;text-shadow:0 2px 14px rgba(0,0,0,.75)}
+      .banner .small{font-size:14px;color:#ffe9c4;text-shadow:0 1px 8px rgba(0,0,0,.8);margin-top:4px;letter-spacing:.08em}
+      .toast{
+        position:absolute;left:50%;bottom:14px;transform:translateX(-50%);max-width:92%;
+        background:rgba(20,12,5,.88);border:1px solid var(--line);color:var(--ink);
+        padding:8px 16px;border-radius:999px;font-size:13.5px;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;
+      }
+      .toast.show{opacity:1}
+      .overlay{
+        position:absolute;inset:0;background:rgba(12,7,3,.78);display:none;
+        align-items:center;justify-content:center;padding:18px;z-index:5;
+      }
+      .overlay.show{display:flex}
+      .overlay .box{text-align:center;max-width:440px;width:100%}
+      .overlay h2{font-family:"Noto Serif SC",serif;font-size:clamp(28px,6vw,40px);margin:0 0 6px;letter-spacing:.08em}
+      .overlay .reason{color:var(--ink-dim);font-size:14.5px;line-height:1.7}
+      .stats{display:flex;gap:10px;justify-content:center;margin:18px 0;flex-wrap:wrap}
+      .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-width:96px}
+      .stat .n{font-size:26px;font-weight:900;color:var(--accent2);font-variant-numeric:tabular-nums}
+      .stat .l{font-size:12px;color:var(--ink-dim);margin-top:2px}
+      .hintline{font-size:12.5px;color:var(--ink-dim);text-align:center;margin-top:9px;line-height:1.7}
+
+      /* touch controls */
+      #touchUI{display:none}
+      body.touch #touchUI{display:block}
+      .joyzone{position:absolute;left:14px;bottom:14px;width:128px;height:128px;z-index:4}
+      .joybase{
+        position:absolute;inset:0;border-radius:50%;background:rgba(20,12,5,.4);border:1.5px solid rgba(247,234,210,.35);
+      }
+      .joyknob{
+        position:absolute;left:50%;top:50%;width:56px;height:56px;border-radius:50%;
+        background:rgba(255,140,66,.55);border:1.5px solid rgba(247,234,210,.6);
+        transform:translate(-50%,-50%);
+      }
+      .tbtns{position:absolute;right:14px;bottom:14px;display:flex;gap:10px;align-items:flex-end;z-index:4}
+      .tbtn{
+        width:62px;height:62px;border-radius:50%;border:1.5px solid rgba(247,234,210,.5);
+        background:rgba(20,12,5,.5);color:var(--ink);font-size:15px;font-weight:700;
+      }
+      .tbtn.big{width:76px;height:76px;background:rgba(255,140,66,.5)}
+      .tbtn.on{background:rgba(255,179,71,.75)}
+      @media (max-width:640px){
+        .wrap{padding:10px 8px 22px}
+        .pbar{min-width:150px}
+        .fuelbar{min-width:100%}
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+
+      <!-- ============ HOME ============ -->
+      <section id="screen-home" class="screen on">
+        <div class="hero">
+          <svg class="flame-badge" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4c3 10-8 14-8 24a8 8 0 0 0 16 0c0-4-2-6-3-9 6 3 11 9 11 17a16 16 0 1 1-32 0C16 22 28 16 32 4z" fill="#ff8c42"/><path d="M32 30c2 5-4 7-4 12a4.5 4.5 0 0 0 9 0c0-5-4-6-5-12z" fill="#ffd34d"/></svg>
+          <h1 class="title">篝火<span class="fire-word">求生</span></h1>
+          <p class="subtitle">双 人 联 机 · 守 住 这 团 火</p>
+          <p class="tagline">你和朋友流落在一片林间空地，中央只有一堆篝火。白天一起砍木头、敲石头、摘浆果，入夜后怪物会从四面八方涌来。添柴、守火、互相救援——火灭了，或者两个人同时倒下，这一局就结束了。撑过的夜晚越多，分数越高。</p>
+        </div>
+
+        <div class="menu">
+          <button class="btn primary" id="btnCreate">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#ffd34d" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span>创建房间<span class="sub">生成一个房间码，发给朋友就能联机</span></span>
+          </button>
+          <button class="btn" id="btnJoin">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#ff8c42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+            <span>加入房间<span class="sub">输入朋友给你的房间码</span></span>
+          </button>
+          <button class="btn" id="btnLocal">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#4da3e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M6 14h.01M18 10v4M16 12h4"/></svg>
+            <span>本地双人<span class="sub">同一台电脑，两个人一起玩，不用联网</span></span>
+          </button>
+        </div>
+
+        <div class="card">
+          <h2>怎么玩</h2>
+          <ul>
+            <li><b>白天（约 75 秒）</b>：到树木、石头、浆果丛旁边按住采集键收集资源，浆果还能留着吃。</li>
+            <li><b>夜晚（约 60 秒）</b>：史莱姆和野狼会从空地边缘涌入，扑向你们和篝火，用攻击键挥斧赶走它们。夜晚一夜比一夜难。</li>
+            <li><b>篝火</b>：燃料一直在烧，夜里烧得更快。站在火边按住采集键可以添柴（消耗木材），火灭了立刻结束。</li>
+            <li><b>吃东西</b>：按进食键吃一颗浆果，回一点血和饱食度；饿到见底会持续掉血。</li>
+            <li><b>救援</b>：队友血量归零会倒地，站到他身边停留 3 秒就能扶起来。两人同时倒地就结束。</li>
+            <li><b>石头</b>：每攒够 5 块石头，全队的斧头伤害 +1，砍怪更快。</li>
+          </ul>
+          <div class="keys">
+            <div><b style="color:var(--p1)">玩家一（橙）</b>：<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动 · <kbd>F</kbd> 攻击 · <kbd>E</kbd> 采集/添柴 · <kbd>Q</kbd> 吃浆果</div>
+            <div><b style="color:var(--p2)">玩家二（蓝）</b>：<kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 移动 · <kbd>回车</kbd> 攻击 · <kbd>右 Shift</kbd> 采集/添柴 · <kbd>/</kbd> 吃浆果</div>
+          </div>
+          <p style="margin:10px 0 0">手机上打开时，屏幕会出现虚拟摇杆和采集 / 攻击 / 进食按钮，一个人操作即可（适合单人或当客人加入朋友的房间）。</p>
+        </div>
+      </section>
+
+      <!-- ============ CREATE LOBBY ============ -->
+      <section id="screen-create" class="screen">
+        <div class="hero" style="padding-top:26px">
+          <h1 class="title" style="font-size:clamp(28px,5vw,38px)">你的房间码</h1>
+          <p class="subtitle">把 这 串 码 发 给 朋 友</p>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="roomcode" id="createCode">·····</div>
+          <p class="statusline" id="createStatus">正在创建房间…</p>
+          <div class="rowbtns">
+            <button class="btn primary center" id="btnStartHost" disabled>开始游戏</button>
+          </div>
+          <p class="note">朋友打开这个页面，点「加入房间」，输入上面的房间码即可。不等朋友也可以先单人开始，朋友中途加入会自动成为玩家二。建议两个人一起玩，一个人守火会很忙。</p>
+          <button class="backlink" data-goto="home">← 返回首页</button>
+        </div>
+      </section>
+
+      <!-- ============ JOIN ============ -->
+      <section id="screen-join" class="screen">
+        <div class="hero" style="padding-top:26px">
+          <h1 class="title" style="font-size:clamp(28px,5vw,38px)">加入房间</h1>
+          <p class="subtitle">输 入 朋 友 给 你 的 房 间 码</p>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <input class="codeinput" id="joinCode" maxlength="5" placeholder="房间码" autocomplete="off" autocapitalize="characters" />
+          <p class="statusline" id="joinStatus" style="margin-top:10px"></p>
+          <div class="rowbtns">
+            <button class="btn primary center" id="btnDoJoin">连接房间</button>
+          </div>
+          <p class="note">连上后等房主点「开始游戏」就能一起玩。如果房主已经先开始了，你会直接加入正在进行的这一局。</p>
+          <button class="backlink" data-goto="home">← 返回首页</button>
+        </div>
+      </section>
+
+      <!-- ============ WAITING (guest) ============ -->
+      <section id="screen-wait" class="screen">
+        <div class="hero" style="padding-top:40px">
+          <h1 class="title" style="font-size:clamp(28px,5vw,38px)">已加入房间</h1>
+          <p class="statusline" id="waitStatus" style="margin-top:14px">等房主开始游戏…</p>
+          <button class="backlink" data-goto="home">← 离开房间，回首页</button>
+        </div>
+      </section>
+
+      <!-- ============ GAME ============ -->
+      <section id="screen-game" class="screen">
+        <div class="hud">
+          <span class="phase" id="hudPhase">白天 <span class="t" id="hudTime">01:15</span></span>
+          <span class="night" id="hudNight">第 1 夜 · 已撑过 0 夜</span>
+          <div class="chips">
+            <span class="chip"><svg viewBox="0 0 24 24" fill="#b5762f"><rect x="3" y="10" width="18" height="5" rx="2.5"/><circle cx="5.5" cy="12.5" r="2.4" fill="#8a5a20"/></svg><span id="chipWood">0</span></span>
+            <span class="chip"><svg viewBox="0 0 24 24" fill="#9aa3ad"><path d="M4 16l3-7 6-3 7 5-2 6-9 2z"/></svg><span id="chipStone">0</span></span>
+            <span class="chip"><svg viewBox="0 0 24 24" fill="#e2543e"><circle cx="9" cy="14" r="5"/><circle cx="16" cy="15" r="4.4"/><path d="M12 9c0-3 2-4 4-5" stroke="#5d8a3c" stroke-width="2" fill="none"/></svg><span id="chipBerry">0</span></span>
+            <span class="chip" title="斧头等级"><svg viewBox="0 0 24 24" fill="none" stroke="#ffd34d" stroke-width="2" stroke-linecap="round"><path d="M13 3l8 8M13 3c-1 4-4 7-8 8l3 3c1-4 3-7 5-9z" fill="#c7ccd4" stroke="none"/><path d="M8 14l-4 7" stroke="#b5762f"/></svg><span id="chipAxe">Lv.0</span></span>
+          </div>
+          <span class="conn" id="hudConn"><span class="dot"></span><span id="hudConnTxt">本地</span></span>
+          <button class="iconbtn" id="btnMute" title="静音开/关" aria-label="静音开/关">
+            <svg id="icoSndOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z" fill="currentColor" stroke="none"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.4 5.6a9 9 0 0 1 0 12.8"/></svg>
+            <svg id="icoSndOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none"><path d="M11 5L6 9H2v6h4l5 4z" fill="currentColor" stroke="none"/><path d="M22 9l-6 6M16 9l6 6"/></svg>
+          </button>
+          <button class="iconbtn" id="btnLeave" title="离开这一局" aria-label="离开这一局">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          </button>
+        </div>
+
+        <div class="bars">
+          <div class="pbar" id="barP1">
+            <div class="who"><span class="swatch" style="background:var(--p1)"></span>玩家一 · 阿橙<span class="st" id="stP1"></span></div>
+            <div class="meter hp"><i id="hpP1" style="width:100%"></i></div>
+            <div class="meter hu"><i id="huP1" style="width:100%"></i></div>
+            <div class="meterlbl"><span>血量</span><span>饱食</span></div>
+          </div>
+          <div class="pbar fuelbar">
+            <div class="who"><svg width="13" height="13" viewBox="0 0 64 64"><path d="M32 4c3 10-8 14-8 24a8 8 0 0 0 16 0c0-4-2-6-3-9 6 3 11 9 11 17a16 16 0 1 1-32 0C16 22 28 16 32 4z" fill="#ff8c42"/></svg>篝火燃料<span class="st" id="stFuel"></span></div>
+            <div class="meter fuel"><i id="fuelFill" style="width:70%"></i></div>
+            <div class="meterlbl"><span>站在火边按住采集键添柴</span><span id="fuelPct">70%</span></div>
+          </div>
+          <div class="pbar" id="barP2">
+            <div class="who"><span class="swatch" style="background:var(--p2)"></span>玩家二 · 阿蓝<span class="st" id="stP2"></span></div>
+            <div class="meter hp"><i id="hpP2" style="width:100%"></i></div>
+            <div class="meter hu"><i id="huP2" style="width:100%"></i></div>
+            <div class="meterlbl"><span>血量</span><span>饱食</span></div>
+          </div>
+        </div>
+
+        <div class="stage" id="stage">
+          <canvas id="cv" width="1000" height="680"></canvas>
+          <div class="banner" id="banner"><div class="big" id="bannerBig"></div><div class="small" id="bannerSmall"></div></div>
+          <div class="toast" id="toast"></div>
+          <div id="touchUI">
+            <div class="joyzone" id="joyZone"><div class="joybase"></div><div class="joyknob" id="joyKnob"></div></div>
+            <div class="tbtns">
+              <button class="tbtn" id="tEat">吃果</button>
+              <button class="tbtn" id="tGat">采集</button>
+              <button class="tbtn big" id="tAtk">攻击</button>
+            </div>
+          </div>
+          <div class="overlay" id="overOverlay">
+            <div class="box">
+              <h2 id="overTitle">篝火熄灭了</h2>
+              <p class="reason" id="overReason"></p>
+              <div class="stats">
+                <div class="stat"><div class="n" id="statNights">0</div><div class="l">撑过的夜晚</div></div>
+                <div class="stat"><div class="n" id="statKills">0</div><div class="l">击败怪物</div></div>
+                <div class="stat"><div class="n" id="statGather">0</div><div class="l">采集总数</div></div>
+              </div>
+              <div class="rowbtns" style="max-width:380px;margin:0 auto">
+                <button class="btn primary center" id="btnAgain">再来一局</button>
+                <button class="btn ghost center" id="btnOverHome">返回首页</button>
+              </div>
+              <p class="note" id="overNote" style="display:none">你是客人，重新开始要等房主点「再来一局」。</p>
+            </div>
+          </div>
+          <div class="overlay" id="discOverlay">
+            <div class="box">
+              <h2>连接断开了</h2>
+              <p class="reason" id="discReason">和房主的连接中断了，这一局没法继续同步。</p>
+              <div class="rowbtns" style="max-width:380px;margin:14px auto 0">
+                <button class="btn primary center" id="btnDiscLocal">改玩本地双人</button>
+                <button class="btn ghost center" id="btnDiscHome">返回首页</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="hintline" id="hintLine">玩家一：WASD 移动 · F 攻击 · E 采集/添柴 · Q 吃浆果</p>
+      </section>
+
+    </div>
+
+<script>
+"use strict";
+/* ================= helpers ================= */
+function $(id){return document.getElementById(id);}
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+function rnd(a,b){return a+Math.random()*(b-a);}
+function dist(x1,y1,x2,y2){var dx=x2-x1,dy=y2-y1;return Math.sqrt(dx*dx+dy*dy);}
+function mulberry32(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function fmtTime(s){s=Math.max(0,Math.ceil(s));var m=Math.floor(s/60),r=s%60;return (m<10?"0":"")+m+":"+(r<10?"0":"")+r;}
+function showScreen(name){
+  var ids=["home","create","join","wait","game"];
+  for(var i=0;i<ids.length;i++){ $("screen-"+ids[i]).classList.toggle("on", ids[i]===name); }
+}
+var toastTimer=null;
+function toast(msg,ms){
+  var t=$("toast"); t.textContent=msg; t.classList.add("show");
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove("show");}, ms||2600);
+}
+var bannerTimer=null;
+function banner(big,small){
+  $("bannerBig").textContent=big; $("bannerSmall").textContent=small||"";
+  var b=$("banner"); b.classList.add("show");
+  if(bannerTimer) clearTimeout(bannerTimer);
+  bannerTimer=setTimeout(function(){b.classList.remove("show");},2900);
+}
+
+/* ================= audio ================= */
+var AC=null, muted=false;
+function audioInit(){
+  if(AC) { if(AC.state==="suspended") AC.resume(); return; }
+  try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; }
+}
+function tone(f0,f1,dur,type,vol,delay){
+  if(!AC||muted) return;
+  var t=AC.currentTime+(delay||0);
+  var o=AC.createOscillator(), g=AC.createGain();
+  o.type=type||"square"; o.frequency.setValueAtTime(f0,t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(30,f1),t+dur);
+  g.gain.setValueAtTime(vol||0.08,t);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+dur+0.02);
+}
+function sfx(name){
+  if(!AC||muted) return;
+  switch(name){
+    case "swing": tone(600,180,0.09,"square",0.05); break;
+    case "hit": tone(180,70,0.1,"sawtooth",0.09); break;
+    case "kill": tone(320,60,0.22,"sawtooth",0.1); tone(520,880,0.14,"square",0.05,0.05); break;
+    case "tick": tone(880,880,0.03,"square",0.03); break;
+    case "collect": tone(520,780,0.09,"square",0.07); tone(780,1040,0.1,"square",0.06,0.07); break;
+    case "eat": tone(300,200,0.08,"sine",0.1); tone(340,220,0.08,"sine",0.1,0.1); break;
+    case "hurt": tone(140,80,0.16,"sawtooth",0.1); break;
+    case "down": tone(420,90,0.5,"sawtooth",0.1); break;
+    case "revive": tone(330,660,0.25,"square",0.08); tone(495,990,0.25,"square",0.06,0.12); break;
+    case "fuel": tone(200,320,0.1,"triangle",0.09); break;
+    case "night": tone(196,196,0.4,"triangle",0.1); tone(185,185,0.5,"triangle",0.1,0.3); break;
+    case "day": tone(392,392,0.18,"triangle",0.09); tone(523,523,0.3,"triangle",0.09,0.14); break;
+    case "over": tone(330,55,1.1,"sawtooth",0.1); break;
+  }
+}
+
+/* ================= input ================= */
+var keys={};
+var GAMEKEYS=["KeyW","KeyA","KeyS","KeyD","KeyF","KeyE","KeyQ","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Enter","ShiftRight","Slash","Space"];
+window.addEventListener("keydown",function(e){
+  keys[e.code]=true;
+  if(GAMEKEYS.indexOf(e.code)>=0 && mode!=="home") e.preventDefault();
+  if(e.code==="Enter" && mode!=="home") e.preventDefault();
+});
+window.addEventListener("keyup",function(e){ keys[e.code]=false; });
+window.addEventListener("blur",function(){ keys={}; });
+
+var touchIn={mx:0,my:0,atk:false,gat:false,eat:false};
+var isTouch=false;
+window.addEventListener("touchstart",function(){ if(!isTouch){isTouch=true;document.body.classList.add("touch");} },{passive:true});
+
+function kbInputP1(){
+  var mx=0,my=0;
+  if(keys["KeyA"])mx-=1; if(keys["KeyD"])mx+=1;
+  if(keys["KeyW"])my-=1; if(keys["KeyS"])my+=1;
+  var l=Math.sqrt(mx*mx+my*my); if(l>0){mx/=l;my/=l;}
+  return {mx:mx,my:my,atk:!!keys["KeyF"],gat:!!keys["KeyE"],eat:!!keys["KeyQ"]};
+}
+function kbInputP2(){
+  var mx=0,my=0;
+  if(keys["ArrowLeft"])mx-=1; if(keys["ArrowRight"])mx+=1;
+  if(keys["ArrowUp"])my-=1; if(keys["ArrowDown"])my+=1;
+  var l=Math.sqrt(mx*mx+my*my); if(l>0){mx/=l;my/=l;}
+  return {mx:mx,my:my,atk:!!keys["Enter"],gat:!!keys["ShiftRight"],eat:!!keys["Slash"]};
+}
+function mergeTouch(inp){
+  var mx=inp.mx+touchIn.mx, my=inp.my+touchIn.my;
+  var l=Math.sqrt(mx*mx+my*my); if(l>1){mx/=l;my/=l;}
+  return {mx:mx,my:my,atk:inp.atk||touchIn.atk,gat:inp.gat||touchIn.gat,eat:inp.eat||touchIn.eat};
+}
+var IDLE={mx:0,my:0,atk:false,gat:false,eat:false};
+
+/* joystick */
+(function(){
+  var zone=$("joyZone"), knob=$("joyKnob"), pid=null;
+  function setKnob(dx,dy){ knob.style.transform="translate(calc(-50% + "+dx+"px), calc(-50% + "+dy+"px))"; }
+  function handle(e){
+    var r=zone.getBoundingClientRect();
+    var cx=r.left+r.width/2, cy=r.top+r.height/2;
+    var dx=e.clientX-cx, dy=e.clientY-cy;
+    var d=Math.sqrt(dx*dx+dy*dy), max=r.width/2-6;
+    if(d>max){dx*=max/d;dy*=max/d;}
+    setKnob(dx,dy);
+    var dead=7;
+    if(Math.abs(dx)<dead&&Math.abs(dy)<dead){touchIn.mx=0;touchIn.my=0;}
+    else{touchIn.mx=dx/max;touchIn.my=dy/max;}
+  }
+  zone.addEventListener("pointerdown",function(e){pid=e.pointerId;zone.setPointerCapture(pid);handle(e);e.preventDefault();});
+  zone.addEventListener("pointermove",function(e){if(e.pointerId===pid)handle(e);});
+  function end(e){if(e.pointerId===pid){pid=null;touchIn.mx=0;touchIn.my=0;setKnob(0,0);}}
+  zone.addEventListener("pointerup",end); zone.addEventListener("pointercancel",end);
+  function bindBtn(id,prop){
+    var b=$(id);
+    b.addEventListener("pointerdown",function(e){touchIn[prop]=true;b.classList.add("on");audioInit();e.preventDefault();});
+    var off=function(){touchIn[prop]=false;b.classList.remove("on");};
+    b.addEventListener("pointerup",off); b.addEventListener("pointercancel",off); b.addEventListener("pointerleave",off);
+  }
+  bindBtn("tAtk","atk"); bindBtn("tGat","gat"); bindBtn("tEat","eat");
+})();
+
+/* ================= world / sim ================= */
+var W=1000,H=680, FIREX=500, FIREY=340;
+var DAY_LEN=75, NIGHT_LEN=60;
+var mode="home";           /* home | local | host | guest */
+var running=false;
+var S=null;                /* authoritative state (local/host) */
+var guestInput={mx:0,my:0,atk:false,gat:false,eat:false};
+var nextId=1;
+
+function newPlayer(idx,x,y){
+  return {idx:idx,x:x,y:y,face:-Math.PI/2,hp:100,hu:100,down:false,rev:0,
+    atkCd:0,swingT:0,prevAtk:false,prevEat:false,gid:-1,gp:0,fuelT:0,tickT:0,flash:0};
+}
+function resPos(){
+  for(var i=0;i<40;i++){
+    var x=rnd(50,W-50), y=rnd(50,H-50);
+    if(dist(x,y,FIREX,FIREY)>130) return {x:x,y:y};
+  }
+  return {x:rnd(50,W-50),y:60};
+}
+function addResource(st,kind){
+  var p=resPos();
+  st.resources.push({id:nextId++,kind:kind,x:p.x,y:p.y,respawn:0});
+}
+function newGame(nPlayers){
+  nextId=1;
+  var st={
+    phase:"day", tPhase:DAY_LEN, night:1, nightsSurvived:0,
+    fuel:70, inv:{wood:0,stone:0,berry:2}, totalStone:0,
+    players:[], monsters:[], resources:[], parts:[],
+    kills:0, gathered:0, over:false, overReason:"", time:0,
+    spawnLeft:0, spawnT:0
+  };
+  st.players.push(newPlayer(0,FIREX-46,FIREY+38));
+  if(nPlayers>1) st.players.push(newPlayer(1,FIREX+46,FIREY+38));
+  var i;
+  for(i=0;i<9;i++) addResource(st,"tree");
+  for(i=0;i<5;i++) addResource(st,"rock");
+  for(i=0;i<6;i++) addResource(st,"bush");
+  return st;
+}
+function axeLevel(st){ return Math.floor(st.totalStone/5); }
+function burst(st,x,y,color,n,spd){
+  for(var i=0;i<(n||8);i++){
+    var a=rnd(0,Math.PI*2), s=rnd(20,(spd||90));
+    st.parts.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-20,life:rnd(0.3,0.7),t:0,color:color,r:rnd(2,4.5)});
+  }
+}
+function gameOver(st,reason){
+  if(st.over) return;
+  st.over=true; st.overReason=reason; sfx("over");
+}
+function hurtPlayer(st,p,dmg){
+  if(p.down||st.over) return;
+  p.hp-=dmg; p.flash=0.25; sfx("hurt");
+  burst(st,p.x,p.y,"#ff6b5e",5,70);
+  if(p.hp<=0){
+    p.hp=0; p.down=true; p.rev=0; sfx("down");
+    burst(st,p.x,p.y,"#f7ead2",12,110);
+    checkBothDown(st);
+  }
+}
+function checkBothDown(st){
+  var alive=0,i;
+  for(i=0;i<st.players.length;i++) if(!st.players[i].down) alive++;
+  if(alive===0) gameOver(st,"down");
+}
+function startNight(st){
+  st.phase="night"; st.tPhase=NIGHT_LEN;
+  st.spawnLeft=5+st.night*3; st.spawnT=1.2;
+  banner("第 "+st.night+" 夜","怪物来了——守住篝火，别让它熄灭");
+  sfx("night");
+}
+function startDay(st){
+  st.phase="day"; st.tPhase=DAY_LEN; st.night++; st.nightsSurvived++;
+  for(var i=st.monsters.length-1;i>=0;i--){ burst(st,st.monsters[i].x,st.monsters[i].y,"#ffe9a8",8,80); }
+  st.monsters=[];
+  banner("天亮了","撑过了第 "+st.nightsSurvived+" 夜 · 趁白天多囤点资源");
+  sfx("day");
+}
+function spawnMonster(st){
+  var side=Math.floor(rnd(0,4)), x,y;
+  if(side===0){x=rnd(0,W);y=-24;} else if(side===1){x=rnd(0,W);y=H+24;}
+  else if(side===2){x=-24;y=rnd(0,H);} else {x=W+24;y=rnd(0,H);}
+  var wolfP=clamp(0.15+st.night*0.05,0.15,0.5);
+  var kind=Math.random()<wolfP?"wolf":"slime";
+  var hpBonus=Math.floor((st.night-1)*0.7);
+  var m={id:nextId++,kind:kind,x:x,y:y,flash:0,atkCd:rnd(0.2,0.6),wob:rnd(0,6.28)};
+  if(kind==="slime"){m.hp=3+hpBonus;m.maxhp=m.hp;m.spd=rnd(48,62);m.dmg=6;m.r=13;}
+  else{m.hp=5+hpBonus;m.maxhp=m.hp;m.spd=rnd(88,104);m.dmg=10;m.r=14;}
+  st.monsters.push(m);
+}
+var GATHER_DEF={tree:{time:0.9,amt:2,key:"wood"},rock:{time:1.15,amt:2,key:"stone"},bush:{time:0.55,amt:2,key:"berry"}};
+
+function simPlayer(st,p,inp,dt){
+  p.atkCd=Math.max(0,p.atkCd-dt);
+  p.swingT=Math.max(0,p.swingT-dt);
+  p.flash=Math.max(0,p.flash-dt);
+  var atkEdge=inp.atk&&!p.prevAtk, eatEdge=inp.eat&&!p.prevEat;
+  p.prevAtk=inp.atk; p.prevEat=inp.eat;
+  if(p.down){
+    /* revived by teammate standing close */
+    var mate=null,i;
+    for(i=0;i<st.players.length;i++){ if(st.players[i]!==p&&!st.players[i].down) mate=st.players[i]; }
+    if(mate&&dist(mate.x,mate.y,p.x,p.y)<46){
+      p.rev+=dt;
+      if(p.rev>=3){
+        p.down=false; p.hp=50; p.hu=Math.max(p.hu,40); p.rev=0;
+        sfx("revive"); burst(st,p.x,p.y,"#8fce62",14,110);
+      }
+    } else p.rev=Math.max(0,p.rev-dt*1.5);
+    p.gp=0; p.gid=-1;
+    return;
+  }
+  /* movement */
+  if(inp.mx!==0||inp.my!==0){
+    p.x=clamp(p.x+inp.mx*155*dt,18,W-18);
+    p.y=clamp(p.y+inp.my*155*dt,18,H-18);
+    p.face=Math.atan2(inp.my,inp.mx);
+  }
+  /* keep out of the fire pit */
+  var fd=dist(p.x,p.y,FIREX,FIREY);
+  if(fd<30&&fd>0.01){ p.x=FIREX+(p.x-FIREX)/fd*30; p.y=FIREY+(p.y-FIREY)/fd*30; }
+  /* attack */
+  if(atkEdge&&p.atkCd<=0){
+    p.atkCd=0.38; p.swingT=0.2; sfx("swing");
+    var dmg=1+axeLevel(st), hitAny=false;
+    for(var mi=st.monsters.length-1;mi>=0;mi--){
+      var m=st.monsters[mi];
+      var d=dist(p.x,p.y,m.x,m.y);
+      if(d<52+m.r){
+        var ang=Math.atan2(m.y-p.y,m.x-p.x);
+        var da=Math.abs(((ang-p.face)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);
+        if(da<1.9||d<26){
+          m.hp-=dmg; m.flash=0.18; hitAny=true;
+          var kb=d>1?26/d:0; m.x+=(m.x-p.x)*kb*0.9; m.y+=(m.y-p.y)*kb*0.9;
+          burst(st,m.x,m.y,"#ffe9a8",4,70);
+          if(m.hp<=0){
+            st.monsters.splice(mi,1); st.kills++;
+            burst(st,m.x,m.y,m.kind==="wolf"?"#9aa3ad":"#8fce62",12,110);
+            sfx("kill");
+          }
+        }
+      }
+    }
+    if(hitAny) sfx("hit");
+  }
+  /* gather / fuel */
+  p.gp=0;
+  var nearFire=dist(p.x,p.y,FIREX,FIREY)<66;
+  if(inp.gat&&nearFire&&st.inv.wood>0&&st.fuel<99.5){
+    p.gid=-2; p.fuelT+=dt; p.gp=clamp(p.fuelT/0.45,0,1);
+    if(p.fuelT>=0.45){
+      p.fuelT=0; st.inv.wood--; st.fuel=clamp(st.fuel+16,0,100);
+      sfx("fuel"); burst(st,FIREX,FIREY-8,"#ffb347",6,60);
+    }
+  } else {
+    p.fuelT=0;
+    var best=null,bd=1e9,i2;
+    for(i2=0;i2<st.resources.length;i2++){
+      var r=st.resources[i2]; if(r.respawn>0) continue;
+      var dd=dist(p.x,p.y,r.x,r.y);
+      if(dd<44&&dd<bd){bd=dd;best=r;}
+    }
+    if(inp.gat&&best){
+      if(p.gid!==best.id){p.gid=best.id;p.gpT=0;}
+      p.gpT=(p.gpT||0)+dt;
+      var def=GATHER_DEF[best.kind];
+      p.gp=clamp(p.gpT/def.time,0,1);
+      p.tickT-=dt;
+      if(p.tickT<=0){p.tickT=0.22;sfx("tick");}
+      if(p.gpT>=def.time){
+        p.gpT=0; p.gid=-1;
+        st.inv[def.key]+=def.amt;
+        if(def.key==="stone") st.totalStone+=def.amt;
+        st.gathered+=def.amt;
+        best.respawn=rnd(11,19);
+        burst(st,best.x,best.y,def.key==="wood"?"#b5762f":(def.key==="stone"?"#c7ccd4":"#e2543e"),10,85);
+        sfx("collect");
+      }
+    } else { p.gid=-1; p.gpT=0; }
+  }
+  /* eat */
+  if(eatEdge){
+    if(st.inv.berry>0&&(p.hp<100||p.hu<100)){
+      st.inv.berry--; p.hp=clamp(p.hp+12,0,100); p.hu=clamp(p.hu+26,0,100);
+      sfx("eat"); burst(st,p.x,p.y-14,"#e2543e",6,55);
+    }
+  }
+  /* hunger */
+  p.hu=clamp(p.hu-0.5*dt,0,100);
+  if(p.hu<=0){ p.hp-=1.4*dt; if(p.hp<=0){p.hp=0;hurtPlayer(st,p,0.01);} }
+}
+
+function simStep(dt){
+  var st=S;
+  if(!st) return;
+  /* particles always animate */
+  var i;
+  for(i=st.parts.length-1;i>=0;i--){var pt=st.parts[i];pt.t+=dt;pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.vy+=130*dt;if(pt.t>=pt.life)st.parts.splice(i,1);}
+  if(st.over) return;
+  st.time+=dt;
+  /* phase */
+  st.tPhase-=dt;
+  if(st.tPhase<=0){ if(st.phase==="day") startNight(st); else startDay(st); }
+  /* inputs */
+  var inputs=[IDLE,IDLE];
+  if(mode==="local"){ inputs[0]=mergeTouch(kbInputP1()); inputs[1]=kbInputP2(); }
+  else { inputs[0]=mergeTouch(kbInputP1()); inputs[1]=guestInput; }
+  for(i=0;i<st.players.length;i++) simPlayer(st,st.players[i],inputs[i]||IDLE,dt);
+  /* fire */
+  st.fuel-= (st.phase==="night"?0.75:0.30)*dt;
+  if(st.fuel<=0){ st.fuel=0; gameOver(st,"fire"); return; }
+  /* resources respawn */
+  for(i=0;i<st.resources.length;i++){
+    var r=st.resources[i];
+    if(r.respawn>0){ r.respawn-=dt; if(r.respawn<=0){var np=resPos();r.x=np.x;r.y=np.y;} }
+  }
+  /* monsters */
+  if(st.phase==="night"&&st.spawnLeft>0){
+    st.spawnT-=dt;
+    if(st.spawnT<=0){ st.spawnT=Math.max(0.65,2.1-st.night*0.14); st.spawnLeft--; spawnMonster(st); }
+  }
+  for(i=st.monsters.length-1;i>=0;i--){
+    var m=st.monsters[i];
+    m.flash=Math.max(0,m.flash-dt); m.atkCd-=dt; m.wob+=dt*6;
+    /* target: nearest living player or the fire */
+    var tx=FIREX,ty=FIREY,td=dist(m.x,m.y,FIREX,FIREY),tp=null;
+    for(var j=0;j<st.players.length;j++){
+      var pl=st.players[j]; if(pl.down) continue;
+      var pd=dist(m.x,m.y,pl.x,pl.y);
+      if(pd<td){td=pd;tx=pl.x;ty=pl.y;tp=pl;}
+    }
+    if(td>m.r+16){
+      m.x+=(tx-m.x)/td*m.spd*dt; m.y+=(ty-m.y)/td*m.spd*dt;
+    } else if(m.atkCd<=0){
+      m.atkCd=0.9;
+      if(tp) hurtPlayer(st,tp,m.dmg);
+      else { st.fuel=clamp(st.fuel-4,0,100); burst(st,FIREX,FIREY,"#ff8c42",7,80); sfx("hit"); if(st.fuel<=0){gameOver(st,"fire");return;} }
+    }
+  }
+}
+</script>
+
+<script>
+/* ================= rendering ================= */
+var cv=$("cv"), ctx=cv.getContext("2d");
+var ovc=document.createElement("canvas"); ovc.width=W; ovc.height=H;
+var octx=ovc.getContext("2d");
+var decor=(function(){
+  var r=mulberry32(42), arr=[];
+  for(var i=0;i<130;i++) arr.push({x:r()*W,y:r()*H,s:r()*5+2,k:r()});
+  return arr;
+})();
+var viewParts=[]; /* guest-side particles */
+
+function nightAlpha(v){ return v.phase==="night"?0.62:0.06; }
+
+function drawPlayerShape(c,p,t){
+  var col=p.idx===0?"#ff8c42":"#4da3e8";
+  var dark=p.idx===0?"#c25e14":"#2c6cb0";
+  /* shadow */
+  c.fillStyle="rgba(0,0,0,0.25)";
+  c.beginPath(); c.ellipse(p.x,p.y+13,13,5,0,0,6.29); c.fill();
+  /* swing arc */
+  if(p.swingT>0&&!p.down){
+    var a0=p.face-1.15, a1=p.face+1.15;
+    c.fillStyle="rgba(255,233,168,"+(0.35*(p.swingT/0.2)).toFixed(3)+")";
+    c.beginPath(); c.moveTo(p.x,p.y);
+    c.arc(p.x,p.y,54,a0,a1); c.closePath(); c.fill();
+    c.strokeStyle="rgba(255,211,77,.8)"; c.lineWidth=3;
+    var am=p.face+Math.sin((0.2-p.swingT)/0.2*Math.PI-0.5)*0.9;
+    c.beginPath(); c.moveTo(p.x+Math.cos(am)*16,p.y+Math.sin(am)*16);
+    c.lineTo(p.x+Math.cos(am)*50,p.y+Math.sin(am)*50); c.stroke();
+  }
+  c.save();
+  c.translate(p.x,p.y);
+  if(p.down) c.rotate(1.35);
+  /* body */
+  c.fillStyle=p.down?"#8a7a63":col;
+  c.beginPath(); c.arc(0,0,14,0,6.29); c.fill();
+  c.lineWidth=2.5; c.strokeStyle=p.flash>0?"#ffffff":dark; c.stroke();
+  /* face */
+  var ex=Math.cos(p.face)*3.5, ey=Math.sin(p.face)*3;
+  c.fillStyle="#241407";
+  if(p.down){
+    c.font="bold 11px sans-serif"; c.textAlign="center";
+    c.fillText("× ×",ex,ey+3);
+  } else {
+    c.beginPath(); c.arc(ex-4,ey-1,1.8,0,6.29); c.arc(ex+4,ey-1,1.8,0,6.29); c.fill();
+    c.beginPath(); c.arc(ex,ey+4.5,2.4,0.15,2.99); c.strokeStyle="#241407"; c.lineWidth=1.4; c.stroke();
+  }
+  c.restore();
+  /* name + hp */
+  c.font="11px 'Noto Sans SC',sans-serif"; c.textAlign="center";
+  c.fillStyle="rgba(0,0,0,.45)";
+  var nm=p.idx===0?"阿橙":"阿蓝";
+  c.fillText(nm,p.x+0.6,p.y-21.4);
+  c.fillStyle="#ffe9c4"; c.fillText(nm,p.x,p.y-22);
+  c.fillStyle="rgba(0,0,0,.5)"; c.fillRect(p.x-15,p.y-19,30,4.5);
+  c.fillStyle=p.hp>30?"#8fce62":"#ff6b5e"; c.fillRect(p.x-14,p.y-18,28*clamp(p.hp,0,100)/100,2.5);
+  /* gather ring */
+  if(p.gp>0){
+    c.strokeStyle="rgba(0,0,0,.4)"; c.lineWidth=4;
+    c.beginPath(); c.arc(p.x,p.y,20,0,6.29); c.stroke();
+    c.strokeStyle="#ffd34d";
+    c.beginPath(); c.arc(p.x,p.y,20,-1.57,-1.57+p.gp*6.29); c.stroke();
+  }
+  /* revive ring */
+  if(p.down&&p.rev>0){
+    c.strokeStyle="#8fce62"; c.lineWidth=4;
+    c.beginPath(); c.arc(p.x,p.y,22,-1.57,-1.57+clamp(p.rev/3,0,1)*6.29); c.stroke();
+    c.fillStyle="#dff5cf"; c.font="bold 12px 'Noto Sans SC',sans-serif";
+    c.fillText("救援中…",p.x,p.y-30);
+  }
+  if(p.down&&p.rev<=0){
+    c.fillStyle="#ffd9d2"; c.font="bold 12px 'Noto Sans SC',sans-serif";
+    c.fillText("倒地了，快来扶我",p.x,p.y-30);
+  }
+}
+function drawMonster(c,m,t){
+  var wob=Math.sin(m.wob)*2;
+  c.fillStyle="rgba(0,0,0,0.25)";
+  c.beginPath(); c.ellipse(m.x,m.y+m.r-2,m.r,4.5,0,0,6.29); c.fill();
+  if(m.kind==="slime"){
+    c.fillStyle=m.flash>0?"#ffffff":"#69b84c";
+    c.beginPath();
+    c.ellipse(m.x,m.y+wob*0.4,m.r+2,m.r-2+wob*0.5,0,3.14,0);
+    c.quadraticCurveTo(m.x+m.r+2,m.y-6,m.x,m.y-m.r-3+wob*0.5);
+    c.quadraticCurveTo(m.x-m.r-2,m.y-6,m.x-m.r-2,m.y);
+    c.fill();
+    c.fillStyle="#17300f";
+    c.beginPath(); c.arc(m.x-4.5,m.y-2,2,0,6.29); c.arc(m.x+4.5,m.y-2,2,0,6.29); c.fill();
+    c.fillStyle="#ff6b5e";
+    c.beginPath(); c.arc(m.x,m.y+3.5,2.6,0,6.29); c.fill();
+  } else {
+    c.fillStyle=m.flash>0?"#ffffff":"#7d8894";
+    c.beginPath(); c.ellipse(m.x,m.y,m.r+4,m.r-2,0,0,6.29); c.fill();
+    c.beginPath(); c.ellipse(m.x,m.y-m.r-3,m.r-4,m.r-6,0,0,6.29); c.fill();
+    c.fillStyle="#5b636d";
+    c.beginPath();
+    c.moveTo(m.x-7,m.y-m.r-6); c.lineTo(m.x-10,m.y-m.r-14); c.lineTo(m.x-3,m.y-m.r-9); c.closePath();
+    c.moveTo(m.x+7,m.y-m.r-6); c.lineTo(m.x+10,m.y-m.r-14); c.lineTo(m.x+3,m.y-m.r-9); c.closePath();
+    c.fill();
+    c.fillStyle="#ff5147";
+    c.beginPath(); c.arc(m.x-4,m.y-m.r-3,1.9,0,6.29); c.arc(m.x+4,m.y-m.r-3,1.9,0,6.29); c.fill();
+  }
+  if(m.hp<m.maxhp){
+    c.fillStyle="rgba(0,0,0,.5)"; c.fillRect(m.x-13,m.y-m.r-13,26,4);
+    c.fillStyle="#ff6b5e"; c.fillRect(m.x-12,m.y-m.r-12,24*clamp(m.hp,0,m.maxhp)/m.maxhp,2.2);
+  }
+}
+function drawResource(c,r,t){
+  if(r.respawn>0) return;
+  c.fillStyle="rgba(0,0,0,0.2)";
+  c.beginPath(); c.ellipse(r.x,r.y+10,15,5,0,0,6.29); c.fill();
+  if(r.kind==="tree"){
+    c.fillStyle="#7a4a21"; c.fillRect(r.x-3.5,r.y-2,7,15);
+    var g=["#3e7d33","#4c9440","#5da34e"];
+    var offs=[[-9,-12],[9,-12],[0,-22]];
+    for(var i=0;i<3;i++){
+      c.fillStyle=g[i];
+      c.beginPath(); c.arc(r.x+offs[i][0],r.y+offs[i][1],12-Math.abs(offs[i][1]+12)*0.12,0,6.29); c.fill();
+    }
+  } else if(r.kind==="rock"){
+    c.fillStyle="#98a0a8";
+    c.beginPath();
+    c.moveTo(r.x-15,r.y+9); c.lineTo(r.x-9,r.y-7); c.lineTo(r.x+1,r.y-13);
+    c.lineTo(r.x+12,r.y-5); c.lineTo(r.x+15,r.y+9); c.closePath(); c.fill();
+    c.fillStyle="#b7bfc7";
+    c.beginPath(); c.moveTo(r.x-9,r.y-7); c.lineTo(r.x+1,r.y-13); c.lineTo(r.x+6,r.y-2); c.lineTo(r.x-3,r.y+1); c.closePath(); c.fill();
+  } else {
+    c.fillStyle="#3e7d33";
+    c.beginPath(); c.ellipse(r.x,r.y+2,16,10,0,0,6.29); c.fill();
+    c.fillStyle="#4c9440";
+    c.beginPath(); c.ellipse(r.x-5,r.y-3,9,7,0,0,6.29); c.fill();
+    c.fillStyle="#e2543e";
+    var bp=[[-8,1],[3,-4],[9,3],[-2,5]];
+    for(var j=0;j<4;j++){ c.beginPath(); c.arc(r.x+bp[j][0],r.y+bp[j][1],3,0,6.29); c.fill(); }
+  }
+}
+function drawFire(c,v,t){
+  var f=clamp(v.fuel,0,100)/100;
+  /* glow */
+  var gr=c.createRadialGradient(FIREX,FIREY,8,FIREX,FIREY,120+f*130);
+  gr.addColorStop(0,"rgba(255,170,60,0.5)"); gr.addColorStop(1,"rgba(255,140,40,0)");
+  c.fillStyle=gr; c.beginPath(); c.arc(FIREX,FIREY,120+f*130,0,6.29); c.fill();
+  /* log ring */
+  c.fillStyle="#8a8f96";
+  for(var i=0;i<7;i++){
+    var a=i/7*6.29+0.4;
+    c.beginPath(); c.arc(FIREX+Math.cos(a)*30,FIREY+Math.sin(a)*30,5.5,0,6.29); c.fill();
+  }
+  /* logs */
+  c.strokeStyle="#6e4420"; c.lineWidth=6; c.lineCap="round";
+  c.beginPath(); c.moveTo(FIREX-16,FIREY+10); c.lineTo(FIREX+13,FIREY-3); c.stroke();
+  c.beginPath(); c.moveTo(FIREX+15,FIREY+11); c.lineTo(FIREX-12,FIREY-4); c.stroke();
+  /* flames */
+  if(v.fuel>0.5){
+    var fl=0.75+f*0.55, flick=Math.sin(t*11)*2+Math.sin(t*23)*1.4;
+    var layers=[["#ff7a29",17,30],["#ffa53a",12,22],["#ffd34d",7,14]];
+    for(var li=0;li<3;li++){
+      var L=layers[li], w=L[1]*fl, h=L[2]*fl;
+      c.fillStyle=L[0];
+      c.beginPath();
+      c.moveTo(FIREX-w,FIREY+7);
+      c.quadraticCurveTo(FIREX-w*0.7,FIREY-h*0.4,FIREX+flick*0.5,FIREY-h);
+      c.quadraticCurveTo(FIREX+w*0.7,FIREY-h*0.35,FIREX+w,FIREY+7);
+      c.quadraticCurveTo(FIREX,FIREY+11,FIREX-w,FIREY+7);
+      c.fill();
+    }
+  } else {
+    c.fillStyle="#9aa3ad";
+    c.beginPath(); c.arc(FIREX,FIREY,4,0,6.29); c.fill();
+  }
+}
+function localPlayerPrompt(v){
+  /* what the player controlling this screen should see as a hint */
+  var idx = mode==="guest"?1:0;
+  var p=v.players[idx]; if(!p||p.down) return null;
+  var keyName = isTouch?"采集键":(idx===0?"E":"右Shift");
+  if(dist(p.x,p.y,FIREX,FIREY)<66&&v.inv.wood>0&&v.fuel<99.5)
+    return {x:p.x,y:p.y-42,txt:"按住 "+keyName+" 添柴"};
+  var best=null,bd=1e9;
+  for(var i=0;i<v.resources.length;i++){
+    var r=v.resources[i]; if(r.respawn>0) continue;
+    var d=dist(p.x,p.y,r.x,r.y); if(d<44&&d<bd){bd=d;best=r;}
+  }
+  if(best){
+    var nm=best.kind==="tree"?"砍树":(best.kind==="rock"?"敲石头":"摘浆果");
+    return {x:p.x,y:p.y-42,txt:"按住 "+keyName+" "+nm};
+  }
+  return null;
+}
+function render(v,t){
+  /* ground */
+  var g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,"#2c4a24"); g.addColorStop(1,"#223a1d");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  for(var i=0;i<decor.length;i++){
+    var d=decor[i];
+    ctx.fillStyle=d.k<0.5?"rgba(255,255,255,0.035)":"rgba(0,0,0,0.06)";
+    ctx.beginPath(); ctx.arc(d.x,d.y,d.s,0,6.29); ctx.fill();
+  }
+  ctx.strokeStyle="rgba(0,0,0,0.14)"; ctx.lineWidth=10; ctx.strokeRect(0,0,W,H);
+  var i2;
+  for(i2=0;i2<v.resources.length;i2++) drawResource(ctx,v.resources[i2],t);
+  drawFire(ctx,v,t);
+  /* entities sorted by y */
+  var ents=[];
+  for(i2=0;i2<v.monsters.length;i2++) ents.push({y:v.monsters[i2].y,k:"m",o:v.monsters[i2]});
+  for(i2=0;i2<v.players.length;i2++) if(v.players[i2]) ents.push({y:v.players[i2].y,k:"p",o:v.players[i2]});
+  ents.sort(function(a,b){return a.y-b.y;});
+  for(i2=0;i2<ents.length;i2++){
+    if(ents[i2].k==="m") drawMonster(ctx,ents[i2].o,t); else drawPlayerShape(ctx,ents[i2].o,t);
+  }
+  /* prompt */
+  var pr=running?localPlayerPrompt(v):null;
+  if(pr){
+    ctx.font="bold 12.5px 'Noto Sans SC',sans-serif"; ctx.textAlign="center";
+    var wpx=ctx.measureText(pr.txt).width+16;
+    ctx.fillStyle="rgba(20,12,5,.78)";
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(pr.x-wpx/2,pr.y-11,wpx,20,9); else ctx.rect(pr.x-wpx/2,pr.y-11,wpx,20);
+    ctx.fill();
+    ctx.fillStyle="#ffe9c4"; ctx.fillText(pr.txt,pr.x,pr.y+3.5);
+  }
+  /* particles */
+  var parts=(mode==="guest")?viewParts:v.parts;
+  for(i2=0;i2<parts.length;i2++){
+    var pt=parts[i2];
+    ctx.globalAlpha=clamp(1-pt.t/pt.life,0,1);
+    ctx.fillStyle=pt.color;
+    ctx.beginPath(); ctx.arc(pt.x,pt.y,pt.r,0,6.29); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  /* night darkness */
+  var na=nightAlpha(v);
+  if(na>0.02){
+    octx.globalCompositeOperation="source-over";
+    octx.clearRect(0,0,W,H);
+    octx.fillStyle="rgba(7,9,30,"+na+")"; octx.fillRect(0,0,W,H);
+    octx.globalCompositeOperation="destination-out";
+    var fr=90+clamp(v.fuel,0,100)/100*150;
+    var fg=octx.createRadialGradient(FIREX,FIREY,10,FIREX,FIREY,fr);
+    fg.addColorStop(0,"rgba(0,0,0,0.97)"); fg.addColorStop(1,"rgba(0,0,0,0)");
+    octx.fillStyle=fg; octx.beginPath(); octx.arc(FIREX,FIREY,fr,0,6.29); octx.fill();
+    for(i2=0;i2<v.players.length;i2++){
+      var pl=v.players[i2]; if(!pl) continue;
+      var pg=octx.createRadialGradient(pl.x,pl.y,4,pl.x,pl.y,54);
+      pg.addColorStop(0,"rgba(0,0,0,0.55)"); pg.addColorStop(1,"rgba(0,0,0,0)");
+      octx.fillStyle=pg; octx.beginPath(); octx.arc(pl.x,pl.y,54,0,6.29); octx.fill();
+    }
+    ctx.drawImage(ovc,0,0);
+  }
+}
+
+/* ================= guest view ================= */
+var gv=null; /* guest render state */
+function applySnapshot(s){
+  if(!gv){
+    gv={phase:s.ph,tPhase:s.tp,night:s.n,nightsSurvived:s.ns,fuel:s.fuel,
+      inv:{wood:s.inv[0],stone:s.inv[1],berry:s.inv[2]},axe:s.axe,
+      players:[],monsters:[],resources:[],parts:[],over:s.over,overReason:s.reason,
+      kills:s.kills,gathered:s.gathered};
+    gv.players[0]=snapPlayer(s.pl[0],0);
+    if(s.pl[1]) gv.players[1]=snapPlayer(s.pl[1],1);
+  }
+  gv.phase=s.ph; gv.tPhase=s.tp; gv.night=s.n; gv.nightsSurvived=s.ns;
+  gv.fuel=s.fuel; gv.inv.wood=s.inv[0]; gv.inv.stone=s.inv[1]; gv.inv.berry=s.inv[2]; gv.axe=s.axe;
+  gv.over=s.over; gv.overReason=s.reason; gv.kills=s.kills; gv.gathered=s.gathered;
+  /* players */
+  updSnapPlayer(0,s.pl[0]); if(s.pl[1]) updSnapPlayer(1,s.pl[1]); else if(gv.players.length>1) gv.players.length=1;
+  /* monsters by id */
+  var seen={},i;
+  for(i=0;i<s.mo.length;i++){
+    var ms=s.mo[i]; seen[ms[0]]=1;
+    var found=null;
+    for(var j=0;j<gv.monsters.length;j++) if(gv.monsters[j].id===ms[0]){found=gv.monsters[j];break;}
+    if(!found){
+      found={id:ms[0],kind:ms[3]===1?"wolf":"slime",x:ms[1],y:ms[2],tx:ms[1],ty:ms[2],hp:ms[4],maxhp:ms[5],r:ms[3]===1?14:13,flash:0,wob:rnd(0,6)};
+      gv.monsters.push(found);
+    } else {
+      if(ms[4]<found.hp) found.flash=0.15;
+      found.tx=ms[1]; found.ty=ms[2]; found.hp=ms[4]; found.maxhp=ms[5];
+    }
+  }
+  for(i=gv.monsters.length-1;i>=0;i--){
+    if(!seen[gv.monsters[i].id]){
+      burst(gv,gv.monsters[i].x,gv.monsters[i].y,"#ffe9a8",8,80);
+      gv.monsters.splice(i,1);
+    }
+  }
+  /* resources */
+  gv.resources=[];
+  for(i=0;i<s.rs.length;i++){
+    var rs=s.rs[i];
+    gv.resources.push({id:rs[0],kind:rs[3]===0?"tree":(rs[3]===1?"rock":"bush"),x:rs[1],y:rs[2],respawn:rs[4]?0:1});
+  }
+  checkPhaseFx(s.ph);
+}
+function snapPlayer(a,idx){
+  if(!a) return {idx:idx,x:FIREX,y:FIREY+40,hp:0,hu:0,down:true,face:0,swingT:0,gp:0,rev:0,flash:0};
+  return {idx:idx,x:a[0],y:a[1],tx:a[0],ty:a[1],hp:a[2],hu:a[3],down:!!a[4],face:a[5],swingT:a[6],gp:a[7],rev:a[8],flash:0,gid:-1};
+}
+function updSnapPlayer(idx,a){
+  if(!a) return;
+  var p=gv.players[idx];
+  if(!p){ gv.players[idx]=snapPlayer(a,idx); return; }
+  if(a[2]<p.hp){ p.flash=0.25; if(idx===1) sfx("hurt"); }
+  p.tx=a[0]; p.ty=a[1]; p.hp=a[2]; p.hu=a[3]; p.down=!!a[4]; p.face=a[5]; p.swingT=a[6]; p.gp=a[7]; p.rev=a[8];
+}
+var lastPhaseFx=null;
+function checkPhaseFx(ph){
+  if(lastPhaseFx===null){lastPhaseFx=ph;return;}
+  if(ph!==lastPhaseFx){
+    lastPhaseFx=ph;
+    if(mode==="guest"){
+      if(ph==="night"){banner("第 "+gv.night+" 夜","怪物来了——守住篝火，别让它熄灭");sfx("night");}
+      else{banner("天亮了","撑过了第 "+gv.nightsSurvived+" 夜 · 趁白天多囤点资源");sfx("day");}
+    }
+  }
+}
+function guestSmooth(dt){
+  if(!gv) return;
+  var k=1-Math.pow(0.0001,dt); /* fast smoothing */
+  var i;
+  for(i=0;i<gv.players.length;i++){
+    var p=gv.players[i]; if(!p||p.tx===undefined) continue;
+    p.x+=(p.tx-p.x)*k; p.y+=(p.ty-p.y)*k;
+    p.flash=Math.max(0,p.flash-dt);
+  }
+  for(i=0;i<gv.monsters.length;i++){
+    var m=gv.monsters[i];
+    m.x+=(m.tx-m.x)*k; m.y+=(m.ty-m.y)*k;
+    m.flash=Math.max(0,m.flash-dt); m.wob+=dt*6;
+  }
+  for(i=gv.parts.length-1;i>=0;i--){var pt=gv.parts[i];pt.t+=dt;pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.vy+=130*dt;if(pt.t>=pt.life)gv.parts.splice(i,1);}
+  viewParts=gv.parts;
+}
+function makeSnapshot(){
+  var st=S;
+  var pl=[];
+  for(var i=0;i<st.players.length;i++){
+    var p=st.players[i];
+    pl.push([Math.round(p.x*10)/10,Math.round(p.y*10)/10,Math.round(p.hp),Math.round(p.hu),p.down?1:0,
+      Math.round(p.face*100)/100,p.swingT>0?1:0,Math.round(p.gp*100)/100,Math.round(p.rev*10)/10]);
+  }
+  var mo=[];
+  for(i=0;i<st.monsters.length;i++){var m=st.monsters[i];mo.push([m.id,Math.round(m.x*10)/10,Math.round(m.y*10)/10,m.kind==="wolf"?1:0,m.hp,m.maxhp]);}
+  var rs=[];
+  for(i=0;i<st.resources.length;i++){var r=st.resources[i];rs.push([r.id,r.x,r.y,r.kind==="tree"?0:(r.kind==="rock"?1:2),r.respawn>0?0:1]);}
+  return {t:"s",ph:st.phase,tp:Math.round(st.tPhase*10)/10,n:st.night,ns:st.nightsSurvived,
+    fuel:Math.round(st.fuel*10)/10,inv:[st.inv.wood,st.inv.stone,st.inv.berry],axe:axeLevel(st),
+    pl:pl,mo:mo,rs:rs,over:st.over,reason:st.overReason,kills:st.kills,gathered:st.gathered};
+}
+
+/* ================= HUD ================= */
+function setBar(id,val){ $(id).style.width=clamp(val,0,100)+"%"; }
+function setConn(cls,txt){ var c=$("hudConn"); c.className="conn "+cls; $("hudConnTxt").textContent=txt; }
+function updateHUD(v){
+  $("hudPhase").firstChild.textContent=(v.phase==="night"?"夜晚 ":"白天 ");
+  $("hudTime").textContent=fmtTime(v.tPhase);
+  $("hudNight").textContent="第 "+v.night+" 夜 · 已撑过 "+v.nightsSurvived+" 夜";
+  $("chipWood").textContent=v.inv.wood;
+  $("chipStone").textContent=v.inv.stone;
+  $("chipBerry").textContent=v.inv.berry;
+  var axe=(v.axe!==undefined)?v.axe:axeLevel(S||{totalStone:0});
+  $("chipAxe").textContent="Lv."+axe;
+  setBar("fuelFill",v.fuel);
+  $("fuelPct").textContent=Math.round(v.fuel)+"%";
+  $("stFuel").textContent=v.fuel<25?"快添柴！":(v.phase==="night"?"夜里烧得快":"");
+  var p1=v.players[0];
+  if(p1){
+    setBar("hpP1",p1.hp); setBar("huP1",p1.hu);
+    $("stP1").textContent=p1.down?"倒地了":(p1.hu<=15?"很饿":"");
+  }
+  var p2=v.players[1], bar2=$("barP2");
+  if(p2){
+    bar2.style.display="";
+    setBar("hpP2",p2.hp); setBar("huP2",p2.hu);
+    $("stP2").textContent=p2.down?"倒地了，等救援":(p2.hu<=15?"很饿":"");
+  } else bar2.style.display="none";
+  /* game over overlay */
+  var ov=$("overOverlay");
+  if(v.over){
+    if(!ov.classList.contains("show")){
+      $("overTitle").textContent=v.overReason==="fire"?"篝火熄灭了":"全员倒地";
+      $("overReason").textContent=v.overReason==="fire"
+        ?"火光散尽的那一刻，林子里的动静一下子安静了——下次记得留一个人添柴。"
+        :"两个人一起倒在了空地上——下次记得互相照应，倒地后 3 秒就能扶起来。";
+      $("statNights").textContent=v.nightsSurvived;
+      $("statKills").textContent=v.kills;
+      $("statGather").textContent=v.gathered;
+      $("btnAgain").style.display=(mode==="guest")?"none":"";
+      $("overNote").style.display=(mode==="guest")?"":"none";
+      ov.classList.add("show");
+    }
+  } else ov.classList.remove("show");
+}
+
+/* ================= main loop ================= */
+var lastTs=0, snapT=0, guestInputT=0, hudT=0;
+function loop(ts){
+  requestAnimationFrame(loop);
+  if(!lastTs) lastTs=ts;
+  var dt=Math.min(0.05,(ts-lastTs)/1000); lastTs=ts;
+  if(!running) return;
+  var t=ts/1000;
+  if(mode==="guest"){
+    guestSmooth(dt);
+    guestInputT-=dt;
+    if(guestInputT<=0&&conn&&conn.open){
+      guestInputT=0.05;
+      var inp=mergeTouch(kbInputP1());
+      try{ conn.send({t:"i",mx:inp.mx,my:inp.my,atk:inp.atk,gat:inp.gat,eat:inp.eat}); }catch(e){}
+    }
+    if(gv){ render(gv,t); hudT-=dt; if(hudT<=0){hudT=0.12;updateHUD(gv);} }
+  } else {
+    simStep(dt);
+    render(S,t);
+    hudT-=dt; if(hudT<=0){hudT=0.12;updateHUD(S);}
+    if(mode==="host"&&conn&&conn.open){
+      snapT-=dt;
+      if(snapT<=0){ snapT=1/15; try{conn.send(makeSnapshot());}catch(e){} }
+    }
+    if(S&&S.over&&running){ /* keep rendering; overlay handled in HUD */ }
+  }
+}
+requestAnimationFrame(loop);
+</script>
+
+<script>
+/* ================= networking (PeerJS) ================= */
+var PREFIX="muse-gouhuo-";
+var CODECHARS="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+var peer=null, conn=null, roomCode="", guestJoined=false, joinTimer=null;
+
+function makeCode(){
+  var s="";
+  for(var i=0;i<5;i++) s+=CODECHARS[Math.floor(Math.random()*CODECHARS.length)];
+  return s;
+}
+function peerAvailable(){ return typeof Peer!=="undefined"; }
+function destroyPeer(){
+  if(joinTimer){clearTimeout(joinTimer);joinTimer=null;}
+  try{ if(conn) conn.close(); }catch(e){}
+  try{ if(peer) peer.destroy(); }catch(e){}
+  peer=null; conn=null; guestJoined=false;
+}
+function startLocal(){
+  audioInit();
+  destroyPeer();
+  mode="local"; S=newGame(2); gv=null; lastPhaseFx="day";
+  running=true;
+  showScreen("game");
+  setConn("ok","本地双人");
+  $("hintLine").textContent="玩家一（橙）：WASD 移动 · F 攻击 · E 采集/添柴 · Q 吃浆果　|　玩家二（蓝）：方向键移动 · 回车 攻击 · 右 Shift 采集/添柴 · / 吃浆果";
+  banner("第 1 天","趁天亮多砍点木头、摘些浆果，晚上要守火");
+  updateHUD(S);
+}
+function startHostGame(){
+  audioInit();
+  S=newGame(guestJoined?2:1); gv=null; lastPhaseFx="day";
+  running=true;
+  showScreen("game");
+  setConn(guestJoined?"ok":"warn", guestJoined?"主机 · 队友已连入":"主机 · 等队友加入（码 "+roomCode+"）");
+  $("hintLine").textContent="你是玩家一（橙）：WASD 移动 · F 攻击 · E 采集/添柴 · Q 吃浆果。朋友输入房间码 "+roomCode+" 就能随时加入。";
+  banner("第 1 天", guestJoined?"队友来了，一起守住这团火":"趁天亮多砍点木头、摘些浆果，晚上要守火");
+  if(conn&&conn.open){ try{conn.send({t:"start"}); conn.send(makeSnapshot());}catch(e){} }
+  updateHUD(S);
+}
+function hostAddGuest(){
+  if(!S||S.over) return;
+  if(S.players.length<2){
+    S.players.push(newPlayer(1,FIREX+46,FIREY+38));
+    toast("队友加入了游戏，现在是两个人了");
+    setConn("ok","主机 · 队友已连入");
+  }
+}
+function onHostConn(c){
+  if(conn&&conn.open){ try{c.close();}catch(e){} return; } /* one guest only */
+  conn=c;
+  c.on("open",function(){
+    guestJoined=true;
+    try{c.send({t:"welcome"});}catch(e){}
+    if(mode==="host"&&running){
+      hostAddGuest();
+      try{c.send({t:"start"}); c.send(makeSnapshot());}catch(e){}
+    } else {
+      $("createStatus").innerHTML="朋友<b>已经连进来了</b>，点「开始游戏」就能一起玩。";
+      $("btnStartHost").disabled=false;
+    }
+  });
+  c.on("data",function(d){
+    if(!d) return;
+    if(d.t==="i"){ guestInput={mx:+d.mx||0,my:+d.my||0,atk:!!d.atk,gat:!!d.gat,eat:!!d.eat}; }
+  });
+  c.on("close",function(){
+    conn=null; guestJoined=false; guestInput={mx:0,my:0,atk:false,gat:false,eat:false};
+    if(mode==="host"){
+      if(running){ toast("队友掉线了——玩家二会站在原地，你可以继续单人玩，等他重新输入房间码加入。",4200); setConn("warn","主机 · 队友已掉线"); }
+      else { $("createStatus").textContent="朋友离开了房间。还在等新的朋友输入房间码加入…"; }
+    }
+  });
+  c.on("error",function(){ /* surfaced via close most of the time */ });
+}
+function createRoom(){
+  audioInit();
+  if(!peerAvailable()){
+    showScreen("create");
+    $("createCode").textContent="-----";
+    $("createStatus").innerHTML='<span class="err">联机组件没能加载出来（可能是网络问题）。可以刷新页面重试，或者直接回首页玩「本地双人」。</span>';
+    return;
+  }
+  destroyPeer();
+  mode="host"; roomCode=makeCode();
+  showScreen("create");
+  $("createCode").textContent=roomCode;
+  $("createStatus").textContent="正在创建房间…";
+  $("btnStartHost").disabled=true;
+  peer=new Peer(PREFIX+roomCode,{debug:0});
+  peer.on("open",function(){
+    $("createStatus").textContent="房间建好了。把房间码发给朋友，他在首页点「加入房间」输入就能连进来。你也可以先单人开始。";
+    $("btnStartHost").disabled=false;
+  });
+  peer.on("connection",onHostConn);
+  peer.on("error",function(err){
+    var msg="创建房间出了点问题（"+(err&&err.type?err.type:"未知错误")+"），刷新页面重试，或者改玩本地双人。";
+    if(err&&err.type==="unavailable-id"){ createRoom(); return; }
+    $("createStatus").innerHTML='<span class="err">'+msg+"</span>";
+  });
+  peer.on("disconnected",function(){ try{peer.reconnect();}catch(e){} });
+}
+function joinRoom(){
+  audioInit();
+  var code=($("joinCode").value||"").trim().toUpperCase();
+  if(code.length<4){ $("joinStatus").innerHTML='<span class="err">先输入房间码（4–6 位），再点连接。</span>'; return; }
+  if(!peerAvailable()){
+    $("joinStatus").innerHTML='<span class="err">联机组件没能加载出来（可能是网络问题）。刷新页面重试，或者和朋友改玩「本地双人」。</span>';
+    return;
+  }
+  destroyPeer();
+  mode="guest"; roomCode=code; gv=null; lastPhaseFx=null;
+  $("joinStatus").textContent="正在连接房间 "+code+" …";
+  $("btnDoJoin").disabled=true;
+  peer=new Peer({debug:0});
+  peer.on("open",function(){
+    conn=peer.connect(PREFIX+code,{reliable:true});
+    joinTimer=setTimeout(function(){
+      if(!guestJoined){
+        $("joinStatus").innerHTML='<span class="err">连不上这个房间。检查一下房间码有没有输错、房主是否还开着这个页面；两个人的网络如果管制较严，点对点连接也可能失败，那就改玩「本地双人」吧。</span>';
+        $("btnDoJoin").disabled=false;
+        destroyPeer(); mode="home";
+      }
+    },14000);
+    conn.on("open",function(){
+      /* wait for welcome before declaring success */
+    });
+    conn.on("data",function(d){
+      if(!d) return;
+      if(d.t==="welcome"){
+        if(joinTimer){clearTimeout(joinTimer);joinTimer=null;}
+        guestJoined=true;
+        $("btnDoJoin").disabled=false;
+        showScreen("wait");
+        $("waitStatus").textContent="已连上房间 "+code+"，等房主点「开始游戏」…如果房主已经先开始了，你马上就会进游戏。";
+      } else if(d.t==="start"){
+        if(joinTimer){clearTimeout(joinTimer);joinTimer=null;}
+        guestJoined=true; running=true; gv=null;
+        showScreen("game");
+        setConn("ok","客人 · 已连接房主");
+        $("hintLine").textContent="你是玩家二（蓝）：WASD 移动 · F 攻击 · E 采集/添柴 · Q 吃浆果；手机上用屏幕摇杆和按钮。";
+        banner("加入成功","和队友一起守住篝火");
+      } else if(d.t==="s"){
+        if(!running){ running=true; showScreen("game"); setConn("ok","客人 · 已连接房主"); }
+        applySnapshot(d);
+      }
+    });
+    conn.on("close",function(){
+      if(mode!=="guest") return;
+      running=false;
+      if(!$("overOverlay").classList.contains("show")) $("discOverlay").classList.add("show");
+    });
+    conn.on("error",function(){});
+  });
+  peer.on("error",function(err){
+    if(joinTimer){clearTimeout(joinTimer);joinTimer=null;}
+    $("btnDoJoin").disabled=false;
+    if(err&&err.type==="peer-unavailable"){
+      $("joinStatus").innerHTML='<span class="err">找不到这个房间：房间码可能输错了，或者房主已经关掉了页面。核对一下再试。</span>';
+    } else {
+      $("joinStatus").innerHTML='<span class="err">连接出了点问题（'+(err&&err.type?err.type:"未知错误")+'）。再试一次，或者改玩「本地双人」。</span>';
+    }
+    mode="home";
+  });
+}
+function leaveToHome(){
+  running=false; S=null; gv=null; guestInput={mx:0,my:0,atk:false,gat:false,eat:false};
+  destroyPeer(); mode="home";
+  $("overOverlay").classList.remove("show");
+  $("discOverlay").classList.remove("show");
+  $("btnDoJoin").disabled=false;
+  showScreen("home");
+}
+
+/* ================= UI wiring ================= */
+$("btnCreate").addEventListener("click",function(){this.blur();createRoom();});
+$("btnJoin").addEventListener("click",function(){this.blur();audioInit();showScreen("join");setTimeout(function(){$("joinCode").focus();},60);});
+$("btnLocal").addEventListener("click",function(){this.blur();startLocal();});
+$("btnStartHost").addEventListener("click",function(){this.blur();startHostGame();});
+$("btnDoJoin").addEventListener("click",function(){this.blur();joinRoom();});
+$("joinCode").addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); joinRoom(); } });
+var backs=document.querySelectorAll("[data-goto='home']");
+for(var bi=0;bi<backs.length;bi++) backs[bi].addEventListener("click",function(){leaveToHome();});
+$("btnLeave").addEventListener("click",function(){
+  this.blur();
+  if(mode==="host"&&conn){ try{conn.send({t:"s",ph:"day",tp:0,n:1,ns:0,fuel:0,inv:[0,0,0],axe:0,pl:[],mo:[],rs:[],over:true,reason:"fire",kills:0,gathered:0});}catch(e){} }
+  leaveToHome();
+  toast("已离开这一局");
+});
+$("btnAgain").addEventListener("click",function(){
+  this.blur();
+  $("overOverlay").classList.remove("show");
+  if(mode==="local") startLocal();
+  else if(mode==="host") startHostGame();
+});
+$("btnOverHome").addEventListener("click",function(){this.blur();leaveToHome();});
+$("btnDiscHome").addEventListener("click",function(){this.blur();$("discOverlay").classList.remove("show");leaveToHome();});
+$("btnDiscLocal").addEventListener("click",function(){this.blur();$("discOverlay").classList.remove("show");startLocal();});
+$("btnMute").addEventListener("click",function(){
+  this.blur(); audioInit(); muted=!muted;
+  $("icoSndOn").style.display=muted?"none":"";
+  $("icoSndOff").style.display=muted?"":"none";
+  if(!muted) sfx("collect");
+});
+document.addEventListener("pointerdown",function(){audioInit();},{once:true});
+</script>
+  </body>
+</html>
